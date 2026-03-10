@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}My Leave Requests{% endblock %}
+{% block header_title %}Your Leave Requests{% endblock %}
+
+{% block content %}
+{% if leaves %}
+<div class="space-y-3">
+    {% for leave in leaves %}
+    <div class="border border-gray-200 rounded-lg overflow-hidden">
+
+        {# --- Summary row (always visible, clickable) --- #}
+        <button onclick="toggleRow('row-{{ loop.index }}')"
+            class="w-full flex items-center justify-between px-5 py-4 bg-white hover:bg-gray-50 transition text-left">
+
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-1">
+                <span class="text-sm font-semibold text-gray-900">{{ leave.leave_id }}</span>
+                <span class="text-sm text-gray-500">{{ leave.start_date }} → {{ leave.end_date }}</span>
+                <span class="text-sm text-gray-700 max-w-xs truncate">{{ leave.reason }}</span>
+            </div>
+
+            <div class="flex items-center gap-3 ml-4 shrink-0">
+                {# Overall status pill — worst state wins #}
+                {% if leave.fa_status == 'Rejected' or leave.warden_status == 'Rejected' or leave.admin_status ==
+                'Rejected' %}
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">Rejected</span>
+                {% elif leave.admin_status == 'Approved' %}
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Fully
+                    Approved</span>
+                {% elif leave.fa_status == 'Pending' %}
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">Awaiting FA</span>
+                {% elif leave.warden_status == 'Pending' %}
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">Awaiting
+                    Warden</span>
+                {% else %}
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">In Progress</span>
+                {% endif %}
+
+                {# Chevron #}
+                <svg id="chevron-row-{{ loop.index }}" class="w-4 h-4 text-gray-400 transition-transform duration-200"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+        </button>
+
+        {# --- Expanded detail panel --- #}
+        <div id="row-{{ loop.index }}" class="hidden border-t border-gray-100 bg-gray-50 px-5 py-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4 text-sm mb-5">
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Reason</p>
+                    <p class="text-gray-800">{{ leave.reason }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Dates</p>
+                    <p class="text-gray-800">{{ leave.start_date }} → {{ leave.end_date }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Time</p>
+                    <p class="text-gray-800">{{ leave.out_time }} → {{ leave.in_time }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Total Days</p>
+                    <p class="text-gray-800">{{ leave.total_days }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Working Days</p>
+                    <p class="text-gray-800">{{ leave.working_days }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">FA Remarks</p>
+                    <p class="text-gray-800">{{ leave.FA_Remarks or '—' }}</p>
+                </div>
+            </div>
+
+            {# Approval pipeline #}
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Approval Pipeline</p>
+            <div class="flex flex-wrap gap-3">
+                {% for label, status in [('FA', leave.fa_status), ('Warden', leave.warden_status), ('Admin',
+                leave.admin_status)] %}
+                <div class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg">
+                    <span class="text-xs font-medium text-gray-600">{{ label }}</span>
+                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full
+                        {% if status == 'Approved' %}bg-green-100 text-green-700
+                        {% elif status == 'Rejected' %}bg-red-100 text-red-700
+                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                        {{ status }}
+                    </span>
+                </div>
+                {% endfor %}
+
+                {% if leave.dean_status and leave.dean_status != 'Unapplicable' %}
+                {% for label, status in [('Dean', leave.dean_status), ('HOD', leave.hod_status)] %}
+                <div class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg">
+                    <span class="text-xs font-medium text-gray-600">{{ label }}</span>
+                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full
+                        {% if status == 'Approved' %}bg-green-100 text-green-700
+                        {% elif status == 'Rejected' %}bg-red-100 text-red-700
+                        {% elif status == 'Unapplicable' %}bg-gray-100 text-gray-400
+                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                        {{ status }}
+                    </span>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-16 border-2 border-dashed border-gray-200 rounded-lg">
+    <div class="text-5xl mb-4">📋</div>
+    <p class="text-gray-500">You have no submitted leave requests.</p>
+</div>
+{% endif %}
+
+<div class="mt-8">
+    <a href="{{ url_for('student.dashboard') }}"
+        class="inline-block px-5 py-2.5 bg-[#1a1a1a] text-white rounded-lg font-medium hover:bg-gray-800 transition">
+        ← Back to Dashboard
+    </a>
+</div>
+
+<script>
+    function toggleRow(id) {
+        const panel = document.getElementById(id);
+        const chevron = document.getElementById('chevron-' + id);
+        const isHidden = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !isHidden);
+        chevron.classList.toggle('rotate-180', isHidden);
+    }
+</script>
+{% endblock %}
